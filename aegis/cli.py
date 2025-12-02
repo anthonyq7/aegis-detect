@@ -25,10 +25,10 @@ def get_code_input(text: Optional[str], file_path: Optional[str]) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="aegis",
-        description="Detect whether code is human-written or AI-generated",
+        description="Classify Python code as AI or human",
         formatter_class=RawDescriptionHelpFormatter,
         epilog=(
-            "Examples:\n"
+        "Examples:\n"
         "  aegis --file path/to/code.py\n"
         "  aegis --text 'def add(a, b): return a + b'\n"
         "  aegis --file script.py --json > result.json\n"
