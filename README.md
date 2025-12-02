@@ -1,7 +1,9 @@
 # Aegis: AI Python Code Detection Model
 
 ## Overview
-Aegis is a fine-tuned CodeBERT model that classifies AI-generated and human code. CodeBERT has 125 million parameters, but using LoRA (Low-Rank Adaptation), Aegis was efficiently trained locally with only a subset of the original parameters being updated. This project sprouted out of my curiosity of classifying AI and human code off semantic differences. Hence, the dataset (20K samples: 10K AI + 10K Human) was aggressively cleaned to ensure standard formatting and the removal of comments and docstrings. The threshold was set to 0.7 to suggest that were is enough evidence to "pass" the code sample as AI-generated. Predictions by Aegis are not perfect: it's not an end all be all judge. Additionally, tasks where semantic convergence between humans and AI is observed (think LeetCode) are inherently hard to classify. 
+Aegis is a fine-tuned CodeBERT model designed to classify AI-generated and human code. While CodeBERT contains 125 million parameters, Aegis was efficiently trained locally using LoRA (Low-Rank Adaptation), updating only a subset of the original parameters.
+
+This project investigates classifying code based on semantic differences. Consequently, the dataset (20K samples: 10K AI + 10K Human) was aggressively cleaned to ensure standard formatting and the removal of comments and docstrings. A confidence threshold of 0.7 was established to flag samples as AI-generated only when strong evidence exists. Aegis is not a definitive judge; predictions can be imperfect, particularly in tasks where semantic convergence between humans and AI is observed (e.g., LeetCode solutions).
 
 ## Installation
 
