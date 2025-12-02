@@ -5,11 +5,21 @@ import matplotlib.pyplot as plt
 import torch
 from dataset import CodeDataset
 from peft import PeftModel
-from sklearn.metrics import ConfusionMatrixDisplay, accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
-
+from sklearn.metrics import (
+    ConfusionMatrixDisplay,
+    accuracy_score,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+)
 from torch.utils.data import DataLoader
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from utils import get_device
+
+IN_PATH = "data/processed"
+OUT_PATH = "model/results"
+THRESHOLD = 0.7
 
 def eval():
     tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
@@ -18,9 +28,6 @@ def eval():
         num_labels=2
     )
 
-    IN_PATH = "data/processed"
-    OUT_PATH = "model/results"
-    THRESHOLD = 0.7  # Classification threshold: AI probability >= threshold -> AI, else Human
     os.makedirs(OUT_PATH, exist_ok=True)
 
     model = PeftModel.from_pretrained(base_model, "./saved_models/aegis-detect")
@@ -43,7 +50,7 @@ def eval():
             outputs = model(input_ids=input_ids, attention_mask=attention_mask)
             probs = torch.nn.functional.softmax(outputs.logits, dim=-1)
             batch_predictions = (probs[:, 1] >= THRESHOLD).int().cpu().numpy()
-            
+
             predictions.extend(batch_predictions.tolist())
             true_labels.extend(labels.cpu().numpy().tolist())
 

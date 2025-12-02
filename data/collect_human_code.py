@@ -1,15 +1,13 @@
 """Script for collecting and cleaning data. Saves function signatures to build prompts for OpenAI calls"""
 
+import ast
 import json
 import os
-import ast
+from typing import List, Optional
 
 from datasets import load_dataset
 from dotenv import load_dotenv
 from huggingface_hub import login
-from typing import Optional
-from typing import List
-
 
 load_dotenv()
 HUGGING_FACE_TOKEN=os.getenv("HUGGING_FACE_TOKEN", "")
@@ -23,7 +21,7 @@ RAW_N_TARGET = 200000
 N_TARGET = 50000
 SEED=22
 os.makedirs(PATH, exist_ok=True)
-    
+
 def collect_human_code() -> None:
     ds = load_dataset(
         "bigcode/the-stack-dedup",
@@ -70,17 +68,17 @@ def is_standalone_func(node) -> bool:
         if first_arg in ["self", "cls"]:
             return False
 
-    #reject magic methods        
+    #reject magic methods
     if node.name.startswith("__") and node.name.endswith("__"):
         return False
-    
+
     return True
 
 def is_english(code: str) -> bool:
     try:
         code.encode("ascii")
         return True
-    except:
+    except UnicodeEncodeError:
         return False
 
 #removes comments + standardizes format aggressively
@@ -107,7 +105,7 @@ def clean(code: str) -> Optional[str]:
         return None
 
 #gets function signatures
-def extract_info(code: str) -> List[str] | None: 
+def extract_info(code: str) -> List[str] | None:
     try:
         signatures = []
         tree = ast.parse(code)
@@ -120,9 +118,9 @@ def extract_info(code: str) -> List[str] | None:
                 stub = ast.unparse(node)
                 signature_line = stub.split('\n')[0]
                 signatures.append(signature_line)
-        
+
         return signatures
-    except:
+    except Exception:
         pass
 
     return None
@@ -136,7 +134,7 @@ def process(input_file: str = RAW_PATH, clean_output: str = CLEAN_PATH, prompts_
 
             if clean_samples == N_TARGET:
                 break
-                
+
             if clean_samples % 100 == 0:
                 print(f"Processed {clean_samples} so far...")
 
@@ -155,7 +153,7 @@ def process(input_file: str = RAW_PATH, clean_output: str = CLEAN_PATH, prompts_
 
                 dataset_metadata = {"code": cleaned, "label": 0}
                 cleaned_human.write(json.dumps(dataset_metadata) + "\n")
-                
+
                 clean_samples += 1
 
 

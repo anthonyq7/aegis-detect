@@ -45,6 +45,9 @@ aegis --help
 ### Confusion Matrix
 ![Alt text](model/results/confusion_matrix.png)
 
+### Attention Heatmap
+![Alt text](model/results/attention_weights.png)
+
 ## Contact
 **Email**: a.j.qin@wustl.edu
 

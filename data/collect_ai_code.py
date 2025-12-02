@@ -1,9 +1,10 @@
+import asyncio
 import json
 from textwrap import dedent
 from typing import List
-from openai import AsyncOpenAI
-import asyncio
+
 from dotenv import load_dotenv
+from openai import AsyncOpenAI
 
 load_dotenv()
 CLEAN_FILE_PATH = "data/raw/clean_code_prompts.jsonl"
@@ -42,7 +43,7 @@ async def generate_code(user_content: str, system_prompt: str, semaphore: asynci
 
             if result and result.strip():
                 return result
-            
+
             with open(EMPTY_RESPONSE_PATH, "a") as f:
                 data = {"request": user_content}
                 f.write(json.dumps(data) + "\n")
@@ -66,17 +67,20 @@ async def create_code(content_list: List[str], out_path: str, prompt: str, semap
                     semaphore=shared_semaphore
                 )
                 return original_data, ai_code
-                
+
             return original_data, None
-        
+
         wrapped_tasks = []
-        
+
         for content in content_list:
+            if not content:
+                continue
+
             try:
                 if content:
                     wrapped_tasks.append(wrap_task(content))
-            except:
-                continue
+            except Exception as e:
+                print(f"Skipping sample: {e}")
 
         buffer = []
         with open(out_path, "a") as outfile:
@@ -86,9 +90,9 @@ async def create_code(content_list: List[str], out_path: str, prompt: str, semap
                 info = await task
                 if not info:
                     continue
-                    
+
                 og_data, code = info
-                
+
 
                 if code:
                     buffer.append({"code": code, "label": 1})
@@ -101,19 +105,19 @@ async def create_code(content_list: List[str], out_path: str, prompt: str, semap
                     outfile.flush()
                     print(f"Saved {count} snippets to disk...")
                     buffer.clear()
-            
+
             if buffer:
                 for doc in buffer:
                     outfile.write(json.dumps(doc) + "\n")
-                
+
                 count += len(buffer)
                 outfile.flush()
                 buffer.clear()
-            
+
         print("Finished collecting snippets")
 
-    except:
-        print("Failed to generate snippets")
+    except Exception as e:
+        print(f"Failed to generate snippets: {e}")
 
 def normalize_input(clean_input_path: str = CLEAN_FILE_PATH) -> List[str]:
 

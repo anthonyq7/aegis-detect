@@ -7,7 +7,7 @@ from transformers import AutoTokenizer
 
 
 class CodeDataset(Dataset):
-    
+
     def __init__(self, filepath: str, tokenizer: AutoTokenizer, max_length: int = 512) -> None:
         self.data = pd.read_json(filepath, lines=True)
         self.tokenizer = tokenizer

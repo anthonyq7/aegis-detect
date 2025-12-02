@@ -1,9 +1,10 @@
-import json
-from textwrap import dedent
-from openai import AsyncOpenAI
 import asyncio
-from dotenv import load_dotenv
+import json
 import os
+from textwrap import dedent
+
+from dotenv import load_dotenv
+from openai import AsyncOpenAI
 
 load_dotenv()
 CLEAN_FILE_PATH = "data/raw/clean_prompts.jsonl"
@@ -71,7 +72,7 @@ async def generate_docstring(code: str, semaphore: asyncio.Semaphore) -> str | N
 
             if result and result.strip():
                 return result
-            
+
             print(response.incomplete_details)
             print(response.status)
             return None
@@ -84,10 +85,10 @@ async def create_docstrings() -> None:
         if not os.path.exists(CLEAN_FILE_PATH):
             print(f"Input file not found: {CLEAN_FILE_PATH}")
             return
-        
+
         with open(CLEAN_FILE_PATH, "r") as f:
             candidates = f.readlines()
-        
+
         print(f"Loaded {len(candidates)} candidates. Starting docstring generation...")
 
         semaphore = asyncio.Semaphore(MAX_CONCURRENT)
@@ -98,15 +99,16 @@ async def create_docstrings() -> None:
             if code:
                 docstring = await generate_docstring(code, semaphore)
                 return original_data, docstring
-                
+
             return original_data, None
-        
+
         wrapped_tasks = []
         for line in candidates:
             try:
                 data = json.loads(line)
                 wrapped_tasks.append(wrap_task(data))
-            except:
+            except json.JSONDecodeError as e:
+                print(f"Skipping sample: {e}")
                 continue
 
         buffer = []
@@ -115,7 +117,7 @@ async def create_docstrings() -> None:
 
                 if count >= DOCSTRING_TARGET:
                     break
-                
+
                 original_data, docstring = await task
                 if docstring and docstring.strip().upper() != "SKIP":
                     code = original_data.get("code")
@@ -129,18 +131,18 @@ async def create_docstrings() -> None:
                     outfile.flush()
                     print(f"Saved {count} docstrings to disk...")
                     buffer.clear()
-            
+
             if buffer:
                 for doc in buffer:
                     outfile.write(json.dumps(doc) + "\n")
-                
+
                 count += len(buffer)
                 outfile.flush()
                 buffer.clear()
-            
+
         print("Finished collecting docstrings")
-    except:
-        print("Failed to generate docstrings")
+    except Exception as e:
+        print(f"Failed to generate docstrings: {e}")
 
 if __name__ == "__main__":
     asyncio.run(create_docstrings())
