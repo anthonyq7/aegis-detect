@@ -18,20 +18,17 @@ class Predictor:
                 raise ValueError("Threshold must be a float between 0 and 1")
 
         if threshold is None:
-            self.threshold = 0.5
+            self.threshold = 0.7
         else:
             self.threshold = float(threshold)
 
         self.model_path = self._get_or_download_model(model_name)
         self._load_model()
 
-
-    #_ preceding means for internal use only
     def _get_or_download_model(self, model_name):
         cached_dir = Path.home() / ".aegis" / "models"
         cached_dir.mkdir(parents=True, exist_ok=True)
 
-        # Download if directory is empty
         if not any(cached_dir.iterdir()):
             try:
                 snapshot_download(
@@ -51,8 +48,8 @@ class Predictor:
         print("Loading model...")
 
         self.tokenizer = AutoTokenizer.from_pretrained(str(self.model_path))
-        base = AutoModelForSequenceClassification.from_pretrained("microsoft/codebert-base", num_labels=2)
-        self.model = PeftModel.from_pretrained(base, str(self.model_path))
+        base_model = AutoModelForSequenceClassification.from_pretrained("microsoft/codebert-base", num_labels=2)
+        self.model = PeftModel.from_pretrained(base_model, str(self.model_path))
         self.model.eval()
 
         print("\u2713 Model loaded!")
@@ -70,13 +67,9 @@ class Predictor:
             return_tensors="pt"
         )
 
-        #runs forward pass w/o tracking gradients to save memory and speeds up inference (we're not in training)
         with torch.no_grad():
-            #feeds tokenized tensors into model
             outputs = self.model(**inputs)
-            #outputs.logits has shape [batch_size, 2] for 2 classes (human, ai)
-            #probs converts logits to probabilities across class dimension; [0] slects first and only item in batch (tensor of length 2)
-            probs = torch.nn.functional.softmax(outputs.logits, dim = -1)[0]
+            probs = torch.nn.functional.softmax(outputs.logits, dim=-1).cpu().numpy().tolist()[0]
 
         human_prob = f"{float(probs[0]):.4f}"
         ai_prob = f"{float(probs[1]):.4f}"

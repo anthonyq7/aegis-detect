@@ -19,3 +19,9 @@ checkpoints/
 aegis.egg-info/
 .egg-info/
 build/
+*.jsonl
+*.json
+*.png
+baseline.py
+report.txt
+aegis_detect.egg-info

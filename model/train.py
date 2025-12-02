@@ -1,6 +1,9 @@
 import os
-
 import torch
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 from dataset import CodeDataset
 from peft import LoraConfig, TaskType, get_peft_model
 from transformers import (
@@ -9,74 +12,91 @@ from transformers import (
     Trainer,
     TrainingArguments,
 )
+from utils import get_device
 
 IN_PATH = "data/processed"
+THRESHOLD = 0.7  
+
 os.makedirs(IN_PATH, exist_ok=True)
 
-#Pre-trained CodeBERT model loaded
-tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
-model = AutoModelForSequenceClassification.from_pretrained(
-    "microsoft/codebert-base",
-    num_labels=2  #Tells model to add two classification heads, one for human (class 0) and one for LLM (class 1)
-)
+def compute_metrics(eval_pred):
 
-#Device selection to determine whether to use GPU acceleration or CP
-if torch.backends.mps.is_available():
-    device = torch.device("mps")
-else:
-    device = torch.device("cpu")
+    logits, labels = eval_pred
+    probs = torch.nn.functional.softmax(torch.tensor(logits), dim=-1).numpy()
+    predictions = (probs[:, 1] >= THRESHOLD).astype(int)
+  
+    return {
+        "accuracy": accuracy_score(labels, predictions),
+        "precision": precision_score(labels, predictions),
+        "recall": recall_score(labels, predictions),
+        "f1": f1_score(labels, predictions)
+    }
 
-#LoRA configuration - (technique to efficiently fine-tune by updating small subset of parameters instead of millions)
-lora_config = LoraConfig(
-    task_type=TaskType.SEQ_CLS,
-    r=4, #Rank of low-rank matrices (lower the rank, fewer parameters to rain)
-    lora_alpha=16, #Scaling facotr for LoRA updates
-    lora_dropout=0.1, #10% dropout to prevent overfitting
-    target_modules=["query", "value", "key"] #which parts of attention layers to apply LoRA
-)
+def train():
+    tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
+    model = AutoModelForSequenceClassification.from_pretrained(
+        "microsoft/codebert-base",
+        num_labels=2
+    )
 
-#Apply LoRA
-model = get_peft_model(model, lora_config)
-model.print_trainable_parameters()
+    device = get_device()
+    print(f"Using {device} for training.")
 
-#load datasets
-train_dataset = CodeDataset(f"{IN_PATH}/train.jsonl", tokenizer)
-val_dataset = CodeDataset(f"{IN_PATH}/validate.jsonl", tokenizer)
+    lora_config = LoraConfig(
+        task_type=TaskType.SEQ_CLS,
+        r=16,
+        lora_alpha=32,
+        lora_dropout=0.05,
+        bias="none",
+        target_modules=["query", "value", "key", "dense"],
+        modules_to_save=["classifier", "score"]
+    )
+    model = get_peft_model(model, lora_config)
+    model.to(device)
+    model.print_trainable_parameters()
 
-#Training Arguments
-training_args = TrainingArguments(
-    output_dir="./saved_models/aegis",
-    num_train_epochs=3,
-    per_device_eval_batch_size=4,
-    per_device_train_batch_size=4, #4 samples at once during training
-    gradient_accumulation_steps=8, #accumulate gradients over 8 minibatches before updating (4*8 is effective batch size)
-    learning_rate=1e-4, #how big steps to take when updating model paramters
-    weight_decay=0.01, #L2 regularization to prevent overfitting
-    logging_steps=100,
-    eval_strategy="epoch", #evalute model after eachh epoch
-    save_strategy="epoch",
-    load_best_model_at_end=True,
-    metric_for_best_model="eval_loss",
-    warmup_ratio=0.1 #increase learning rate for first 10% of training
-)
+    train_dataset = CodeDataset(f"{IN_PATH}/train.jsonl", tokenizer)
+    val_dataset = CodeDataset(f"{IN_PATH}/val.jsonl", tokenizer)
 
-#Trainer
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=train_dataset,
-    eval_dataset=val_dataset
-)
+    training_args = TrainingArguments(
+        output_dir="./saved_models/aegis",
+        gradient_checkpointing=False,
+        per_device_train_batch_size=16,
+        gradient_accumulation_steps=2,
+        bf16=True,
+        dataloader_num_workers=4,
+        dataloader_pin_memory=False,
+        dataloader_persistent_workers=True,
+        learning_rate=3e-4,
+        num_train_epochs=5,
+        warmup_ratio=0.1,
+        lr_scheduler_type="cosine_with_restarts",
+        weight_decay=0.01,
+        label_smoothing_factor=0.1,
+        neftune_noise_alpha=5,
+        logging_steps=50,
+        eval_strategy="epoch",
+        save_strategy="epoch",
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_loss"
+    )
 
-#Training
-print("\nStarting training")
-trainer.train()
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=val_dataset,
+        compute_metrics=compute_metrics
+    )
 
-#Save
-print("\nSaving model")
-model.save_pretrained("./saved_models/aegis_final")
-tokenizer.save_pretrained("./saved_models/aegis_final")
+    print("\nStarting training")
+    trainer.train()
 
-print("Done")
+    print("\nSaving model")
+    model.save_pretrained("./saved_models/aegis-detect")
+    tokenizer.save_pretrained("./saved_models/aegis-detect")
+    print("Done")
 
 
+if __name__ == "__main__":
+    train()

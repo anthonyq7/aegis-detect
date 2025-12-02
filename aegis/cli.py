@@ -12,13 +12,10 @@ from aegis.predictor import Predictor
 
 hf_logging.set_verbosity_error()
 
-
-#gets code from --text or --file, Argparse enforces at least on is provided
 def get_code_input(text: Optional[str], file_path: Optional[str]) -> str:
     if text:
         return text
 
-    #argparse ensures path is provided
     file = Path(file_path).expanduser()
     if not file.exists():
         raise SystemExit(f"Error: File not found: {file_path}")
@@ -26,7 +23,6 @@ def get_code_input(text: Optional[str], file_path: Optional[str]) -> str:
 
 
 def main() -> None:
-    #sets up command line args
     parser = argparse.ArgumentParser(
         prog="aegis",
         description="Detect whether code is human-written or AI-generated",
@@ -70,7 +66,6 @@ def main() -> None:
 
     result = predictor.predict(code)
 
-    #display results
     if args.json:
         print(json.dumps(result, ensure_ascii=False))
     else:

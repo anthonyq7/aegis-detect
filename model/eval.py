@@ -5,86 +5,87 @@ import matplotlib.pyplot as plt
 import torch
 from dataset import CodeDataset
 from peft import PeftModel
-from sklearn.metrics import (
-    ConfusionMatrixDisplay,
-    accuracy_score,
-    confusion_matrix,
-    f1_score,
-    precision_score,
-    recall_score,
-)
+from sklearn.metrics import ConfusionMatrixDisplay, accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
+
+from torch.utils.data import DataLoader
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from utils import get_device
 
-tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
-base_model = AutoModelForSequenceClassification.from_pretrained(
-    "microsoft/codebert-base",
-    num_labels=2
-)
+def eval():
+    tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
+    base_model = AutoModelForSequenceClassification.from_pretrained(
+        "microsoft/codebert-base",
+        num_labels=2
+    )
 
-IN_PATH = "data/processed"
-OUT_PATH = "model/results"
-os.makedirs(OUT_PATH, exist_ok=True)
+    IN_PATH = "data/processed"
+    OUT_PATH = "model/results"
+    THRESHOLD = 0.7  # Classification threshold: AI probability >= threshold -> AI, else Human
+    os.makedirs(OUT_PATH, exist_ok=True)
 
-#Load original CodeBERT model and fine-tuned LoRA wieghts on top of base model
-model = PeftModel.from_pretrained(base_model, "./saved_models/aegis_final")
+    model = PeftModel.from_pretrained(base_model, "./saved_models/aegis-detect")
+    test_dataset = CodeDataset(f"{IN_PATH}/test.jsonl", tokenizer)
+    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
-test_dataset = CodeDataset(f"{IN_PATH}/test.jsonl", tokenizer)
+    device = get_device()
+    model = model.to(device)
+    model.eval()
 
-model.eval() #puts model in eval mode (disables dropout, batch norm updates)
-predictions = []
-true_labels = []
+    predictions = []
+    true_labels = []
 
-with torch.no_grad(): #toch.nograd() disables gradient computation (saves memory, speeds up inference)
-    for i in range(len(test_dataset)):
-        sample = test_dataset[i]
-        input_ids = sample["input_ids"].unsqueeze(0) #.unsqueeze adds a batch dimension(model expects batches, not single sample)
-        attention_mask = sample["attention_mask"].unsqueeze(0)
+    with torch.no_grad():
+        for batch in test_loader:
+            input_ids = batch["input_ids"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
+            labels = batch["labels"].to(device)
 
-        outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-        pred = torch.argmax(outputs.logits, dim=-1).item() #Gets class with highest probability, .item() convets tensor to Python number
-        predictions.append(pred)
-        true_labels.append(sample["labels"].item())
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+            probs = torch.nn.functional.softmax(outputs.logits, dim=-1)
+            batch_predictions = (probs[:, 1] >= THRESHOLD).int().cpu().numpy()
+            
+            predictions.extend(batch_predictions.tolist())
+            true_labels.extend(labels.cpu().numpy().tolist())
 
-cm = confusion_matrix(true_labels, predictions)
+    cm = confusion_matrix(true_labels, predictions)
 
-disp = ConfusionMatrixDisplay(
-    confusion_matrix=cm,
-    display_labels=["Human", "AI-Generated"]
-)
+    disp = ConfusionMatrixDisplay(
+        confusion_matrix=cm,
+        display_labels=["Human", "AI-Generated"]
+    )
 
-disp.plot(cmap="Blues", values_format="d")
-plt.title("Aegis: Code Origin Classification", fontsize=14, pad=15)
-plt.xlabel("Predicted Label", fontsize=12)
-plt.ylabel("True Label", fontsize=12)
-plt.tight_layout()
-plt.savefig(f"{OUT_PATH}/confusion_matrix.png", dpi=300, bbox_inches="tight")
-plt.close()
+    disp.plot(cmap=plt.cm.Blues)
+    plt.title("Confusion Matrix")
+    plt.savefig(f"{OUT_PATH}/confusion_matrix.png", dpi=300)
+    plt.close()
 
-# Calculate metrics
-accuracy = accuracy_score(true_labels, predictions)
-precision = precision_score(true_labels, predictions)
-recall = recall_score(true_labels, predictions)
-f1 = f1_score(true_labels, predictions) #harmonic mean of precision and recall
+    accuracy = accuracy_score(true_labels, predictions)
+    precision = precision_score(true_labels, predictions)
+    recall = recall_score(true_labels, predictions)
+    f1 = f1_score(true_labels, predictions)
 
-results = {
-    "model_name": "Aegis",
-    "metrics": {
-        "accuracy": f"{float(accuracy):.4f}",
-        "precision": f"{float(precision):.4f}",
-        "recall": f"{float(recall):.4f}",
-        "f1": f"{float(f1):.4f}",
-    },
-    "confusion_matrix": {
-        "values": cm.tolist(),
-        "labels": ["Human", "AI-Generated"],
-        "true_negatives": int(cm[0, 0]),
-        "false_positives": int(cm[0, 1]),
-        "false_negatives": int(cm[1, 0]),
-        "true_positives": int(cm[1, 1])
+    results = {
+        "model_name": "Aegis",
+        "metrics": {
+            "accuracy": f"{accuracy:.4f}",
+            "precision": f"{precision:.4f}",
+            "recall": f"{recall:.4f}",
+            "f1": f"{f1:.4f}",
+        },
+        "confusion_matrix": {
+            "values": cm.tolist(),
+            "labels": ["Human", "AI-Generated"],
+            "true_negatives": int(cm[0, 0]),
+            "false_positives": int(cm[0, 1]),
+            "false_negatives": int(cm[1, 0]),
+            "true_positives": int(cm[1, 1])
+        }
     }
-}
 
-with open(f"{OUT_PATH}/model_results.json", "w") as file:
-    file.write(json.dumps(results, indent=4))
+    with open(f"{OUT_PATH}/model_results.json", "w") as file:
+        file.write(json.dumps(results, indent=4))
 
-print(f"Results saved to {OUT_PATH}/model_results.json")
+    print(f"Results saved to {OUT_PATH}/model_results.json")
+
+if __name__ == "__main__":
+    eval()

@@ -6,45 +6,28 @@ from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 
 
-#PyTorch's Dataset is base class for custom dataset
-#A dataset is a blueprint for how to unload and organize data -> a smart container that knows how to load, process, and return data in correct format for the model
-#torch is needed to create tensors
 class CodeDataset(Dataset):
+    
     def __init__(self, filepath: str, tokenizer: AutoTokenizer, max_length: int = 512) -> None:
-
-        #the jsonl data
         self.data = pd.read_json(filepath, lines=True)
-
-        #embeds
         self.tokenizer = tokenizer
-
-        #max tokens for sample
         self.max_length = max_length
-
         print(f"Loaded {len(self.data)} samples from {filepath}")
 
-    #Required by PyTorch to know how many samples exist
-    #Python magic method so you can do len(dataset) to find length
     def __len__(self) -> int:
         return len(self.data)
 
-    #Called everytime PyTorch needs a training example
     def __getitem__(self, index: int) -> Dict[str, Any]:
         row = self.data.iloc[index]
-
-        #tokenizes the sample into vector with padding and truncation
         encoding = self.tokenizer(
-            row["code"], #actual code string
-            truncation = True, #truncates if bigger than max length
-            padding = "max_length", #pads (adds token) if < max_length to reach 512 tokens
-            max_length = self.max_length, #the target length: 512 tokens
-            return_tensors = "pt" #Return PyTorch tensors (multi-dimensional arrays)
+            row["code"],
+            truncation=True,
+            padding="max_length",
+            max_length=self.max_length,
+            return_tensors="pt"
         )
-
-        #These specific keys are REQUIRED for most HuggingFace models like BERT
-        #.flatten converst multi-dimensional array into a one-dimensional array
         return {
-            "input_ids": encoding["input_ids"].flatten(), #The tokenized code
-            "attention_mask": encoding["attention_mask"].flatten(), #Tells model which tokens are real vs padding
-            "labels": torch.tensor(row["label"], dtype=torch.long) #The correct answer (0 = human or 1 = AI)
+            "input_ids": encoding["input_ids"].flatten(),
+            "attention_mask": encoding["attention_mask"].flatten(),
+            "labels": torch.tensor(row["label"], dtype=torch.long)
         }
