@@ -1,4 +1,4 @@
-# Aegis: AI Python Code Detection Model
+# Aegis: AI vs. Human Python Code Classifier
 
 ## Overview
 Aegis is a fine-tuned CodeBERT model designed to classify AI-generated and human Python code. While CodeBERT contains 125 million parameters, Aegis was efficiently trained locally using LoRA (Low-Rank Adaptation), updating only a subset of the original parameters.
