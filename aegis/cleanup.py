@@ -2,6 +2,7 @@ import shutil
 import sys
 from pathlib import Path
 
+
 def get_cache_dir() -> Path:
     return Path.home() / ".aegis" / "models"
 
