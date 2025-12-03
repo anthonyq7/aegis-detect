@@ -30,6 +30,7 @@ all = ["aegis-detect[dev]"]
 
 [project.scripts]
 aegis = "aegis.cli:main"
+aegis-cleanup = "aegis.cleanup:remove_cache"
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]

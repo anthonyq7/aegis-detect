@@ -29,6 +29,10 @@ aegis --file path/to/code.py --threshold 0.7
 
 # Help
 aegis --help
+
+# Uninstall
+pip uninstall aegis-detect
+aegis-cleanup 
 ```
 
 **Notes**:
