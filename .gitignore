@@ -25,3 +25,4 @@ build/
 baseline.py
 report.txt
 aegis_detect.egg-info
+PYPI.md
