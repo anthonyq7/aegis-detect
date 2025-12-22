@@ -56,6 +56,7 @@ pip uninstall aegis-detect
 
 ## Contact
 **Email**: a.j.qin@wustl.edu
+**Email**: ethanqin@bu.edu
 
 ## License
 This project is licensed under the [MIT License](LICENSE).
