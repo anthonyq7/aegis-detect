@@ -1,6 +1,6 @@
 [project]
 name = "aegis-detect"
-version = "0.1.4"
+version = "0.1.5"
 description = "AI Code Classifier Tool"
 readme = "PYPI.md"
 requires-python = ">=3.10" 
