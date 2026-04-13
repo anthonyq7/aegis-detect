@@ -47,6 +47,8 @@ pip uninstall aegis-detect
 - **Precision**: 83.37%
 - **Recall**: 87.70%
 - **F1-Score**: 85.48%
+- **False Positive**: 17.5%
+- **False Negative**: 12.3%
 
 ### Confusion Matrix
 ![Alt text](model/results/confusion_matrix.png)
