@@ -10,7 +10,14 @@ from transformers import logging as hf_logging
 
 from aegis.predictor import Predictor
 
+from importlib.metadata import version, PackageNotFoundError
+
 hf_logging.set_verbosity_error()
+
+try:
+    __version__ = version("aegis-detect")
+except PackageNotFoundError:
+    __version__ = "unknown"
 
 def get_code_input(text: Optional[str], file_path: Optional[str]) -> str:
     if text:
@@ -32,7 +39,7 @@ def main() -> None:
         "  aegis --file path/to/code.py\n"
         "  aegis --text 'def add(a, b): return a + b'\n"
         "  aegis --file script.py --json > result.json\n"
-        "  aegis --threshold 0.7\n"
+        "  aegis --text 'your code snippet' --threshold 0.7\n"
         )
     )
 
@@ -46,6 +53,9 @@ def main() -> None:
 
     #allows users to adjust a threshold
     parser.add_argument("--threshold", type=float, help="Custom threshold to classify as AI")
+
+    #allows users to check version
+    parser.add_argument("--version", action="version", version=f"aegis {__version__}", help="Display the version of Aegis")
 
     #parses args
     args = parser.parse_args()
