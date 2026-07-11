@@ -3,14 +3,13 @@
 import argparse
 import json
 from argparse import RawDescriptionHelpFormatter
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Optional
 
 from transformers import logging as hf_logging
 
 from aegis.predictor import Predictor
-
-from importlib.metadata import version, PackageNotFoundError
 
 hf_logging.set_verbosity_error()
 
