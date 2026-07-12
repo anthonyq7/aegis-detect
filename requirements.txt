@@ -1,16 +1,20 @@
+# Runtime dependencies (see pyproject.toml [project.dependencies])
+huggingface-hub>=0.15.0
+numpy>=1.21.0
+peft>=0.4.0
+safetensors>=0.3.0
 torch>=2.0.0
 transformers>=4.30.0
-peft>=0.4.0
+
+# Dev dependencies (see pyproject.toml [project.optional-dependencies].dev and [tool.uv])
 accelerate>=0.20.0
-pandas>=1.5.0
-numpy>=1.21.0
 datasets>=2.0.0
-matplotlib>=3.10.7
-seaborn>=0.13.2
-scikit-learn>=1.0.0
-safetensors>=0.3.0
-huggingface-hub>=0.15.0
-tqdm>=4.60.0
+matplotlib>=3.5.0
 openai>=1.0.0
+pandas>=1.5.0
+pytest>=8.0.0
 python-dotenv>=0.19.0
 ruff>=0.6.0
+scikit-learn>=1.0.0
+seaborn>=0.13.2
+tqdm>=4.60.0
