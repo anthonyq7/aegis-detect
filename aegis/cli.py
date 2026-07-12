@@ -19,7 +19,9 @@ except PackageNotFoundError:
     __version__ = "unknown"
 
 def get_code_input(text: Optional[str], file_path: Optional[str]) -> str:
-    if text:
+    if text is not None:
+        if not text.strip():
+            raise SystemExit("Error: --text cannot be empty")
         return text
 
     file = Path(file_path).expanduser()
@@ -28,7 +30,7 @@ def get_code_input(text: Optional[str], file_path: Optional[str]) -> str:
     return file.read_text(encoding="utf-8")
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="aegis",
         description="Classify Python code as AI or human",
@@ -56,22 +58,21 @@ def main() -> None:
     #allows users to check version
     parser.add_argument("--version", action="version", version=f"aegis {__version__}", help="Display the version of Aegis")
 
+    return parser
+
+
+def main(argv: Optional[list[str]] = None) -> None:
     #parses args
-    args = parser.parse_args()
+    args = build_parser().parse_args(argv)
 
     #gets the code to analyze
     code = get_code_input(args.text, args.file)
 
     #loads model and makes a prediction
-    if args.threshold is None:
-        predictor = Predictor()
-    elif args.threshold:
+    try:
         predictor = Predictor(threshold=args.threshold)
-    elif args.threshold == 0:
-        predictor = Predictor(threshold=0)
-    else:
-        raise ValueError("Threshold must be a float between 0 and 1")
-
+    except ValueError as e:
+        raise SystemExit(f"Error: {e}")
 
     result = predictor.predict(code)
 
