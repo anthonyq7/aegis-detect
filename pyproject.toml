@@ -41,7 +41,8 @@ packages = ["aegis"]
 
 [tool.uv]
 dev-dependencies = [
-    "ruff>=0.6.0"
+    "ruff>=0.6.0",
+    "pytest>=8.0.0"
 ]
 
 [tool.ruff]

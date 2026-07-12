@@ -8,19 +8,22 @@ from huggingface_hub import snapshot_download
 from peft import PeftModel
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
+DEFAULT_THRESHOLD = 0.7
+
+
+def validate_threshold(threshold: Optional[float]) -> float:
+    if threshold is None:
+        return DEFAULT_THRESHOLD
+    if not (0.0 <= threshold <= 1.0):
+        raise ValueError("Threshold must be a float between 0 and 1")
+    return float(threshold)
+
 
 class Predictor:
 
     def __init__(self, threshold: Optional[float] = None, model_name="anthonyq7/aegis"):
 
-        if threshold:
-            if not (0.0 <= threshold <= 1.0):
-                raise ValueError("Threshold must be a float between 0 and 1")
-
-        if threshold is None:
-            self.threshold = 0.7
-        else:
-            self.threshold = float(threshold)
+        self.threshold = validate_threshold(threshold)
 
         self.model_path = self._get_or_download_model(model_name)
         self._load_model()
