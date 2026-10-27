@@ -41,6 +41,7 @@ def build_parser() -> argparse.ArgumentParser:
         "  aegis --text 'def add(a, b): return a + b'\n"
         "  aegis --file script.py --json > result.json\n"
         "  aegis --text 'your code snippet' --threshold 0.7\n"
+        "  aegis --file script.py --raw\n"
         )
     )
 
@@ -54,6 +55,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     #allows users to adjust a threshold
     parser.add_argument("--threshold", type=float, help="Custom threshold to classify as AI")
+
+    #skips the training-time normalization (docstring/comment removal)
+    parser.add_argument("--raw", action="store_true", help="Classify the code as-is, without stripping docstrings and comments")
 
     #allows users to check version
     parser.add_argument("--version", action="version", version=f"aegis {__version__}", help="Display the version of Aegis")
@@ -74,7 +78,7 @@ def main(argv: Optional[list[str]] = None) -> None:
     except ValueError as e:
         raise SystemExit(f"Error: {e}")
 
-    result = predictor.predict(code)
+    result = predictor.predict(code, normalize=not args.raw)
 
     if args.json:
         print(json.dumps(result, ensure_ascii=False))

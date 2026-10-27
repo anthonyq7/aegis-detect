@@ -8,6 +8,8 @@ from huggingface_hub import snapshot_download
 from peft import PeftModel
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
+from aegis.normalize import strip_docstrings
+
 DEFAULT_THRESHOLD = 0.7
 
 
@@ -57,10 +59,15 @@ class Predictor:
 
         print("\u2713 Model loaded!")
 
-    def predict(self, code):
+    def predict(self, code, normalize: bool = True):
 
         if not code or not code.strip():
             raise ValueError("Code cannot be empty")
+
+        if normalize:
+            # Match the training data: comments and docstrings removed, formatting
+            # standardized. Falls back to the raw text if the snippet does not parse.
+            code = strip_docstrings(code) or code
 
         inputs = self.tokenizer(
             code,
@@ -82,13 +89,3 @@ class Predictor:
             "ai": ai_prob,
             "prediction": "ai-generated" if float(ai_prob) >= self.threshold else "human"
         }
-
-
-
-
-
-
-
-
-
-
