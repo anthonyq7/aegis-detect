@@ -4,7 +4,7 @@ import os
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-HUMAN_CODE = "data/raw/cleaned.jsonl"
+HUMAN_CODE = "data/raw/human_dataset.jsonl"
 AI_CODE = "data/raw/ai_dataset.jsonl"
 OUT_PATH = "data/processed"
 

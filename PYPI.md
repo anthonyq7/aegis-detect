@@ -27,6 +27,9 @@ aegis --file path/to/code.py --json > result.json
 # Setting a threshold for AI classification 
 aegis --file path/to/code.py --threshold 0.7
 
+# Classify as-is (by default docstrings and comments are stripped first, as in training)
+aegis --file path/to/code.py --raw
+
 # Help
 aegis --help
 

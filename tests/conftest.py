@@ -7,7 +7,7 @@ class FakePredictor:
     def __init__(self, threshold=None, model_name="anthonyq7/aegis"):
         self.threshold = threshold
 
-    def predict(self, code):
+    def predict(self, code, normalize=True):
         return {"human": "0.2000", "ai": "0.8000", "prediction": "ai-generated"}
 
 
