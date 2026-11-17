@@ -1,29 +1,29 @@
 {
     "model_name": "Aegis",
     "metrics": {
-        "accuracy": "0.8510",
-        "precision": "0.8337",
-        "recall": "0.8770",
-        "f1": "0.8548"
+        "accuracy": "0.9393",
+        "precision": "0.9189",
+        "recall": "0.9613",
+        "f1": "0.9396"
     },
     "confusion_matrix": {
         "values": [
             [
-                825,
-                175
+                885,
+                79
             ],
             [
-                123,
-                877
+                36,
+                895
             ]
         ],
         "labels": [
             "Human",
             "AI-Generated"
         ],
-        "true_negatives": 825,
-        "false_positives": 175,
-        "false_negatives": 123,
-        "true_positives": 877
+        "true_negatives": 885,
+        "false_positives": 79,
+        "false_negatives": 36,
+        "true_positives": 895
     }
 }
