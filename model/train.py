@@ -62,8 +62,8 @@ def train():
     training_args = TrainingArguments(
         output_dir="./saved_models/aegis",
         gradient_checkpointing=False,
-        per_device_train_batch_size=16,
-        gradient_accumulation_steps=2,
+        per_device_train_batch_size=8,
+        gradient_accumulation_steps=4,
         bf16=True,
         dataloader_num_workers=4,
         dataloader_pin_memory=False,
