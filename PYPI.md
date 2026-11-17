@@ -3,7 +3,7 @@
 ## Overview
 Aegis is a fine-tuned CodeBERT model designed to classify AI-generated and human Python code. While CodeBERT contains 125 million parameters, Aegis was efficiently trained locally using LoRA (Low-Rank Adaptation), updating only a subset of the original parameters.
 
-This project investigates classifying code based on semantic differences. Consequently, the dataset (20K Python samples: 10K AI + 10K Human) was aggressively cleaned to ensure standard formatting and the removal of comments and docstrings. A confidence threshold of 0.7 was established to flag samples as AI-generated only when strong evidence exists. Aegis is not a definitive judge; predictions can be imperfect, particularly in tasks where semantic convergence between humans and AI is observed (e.g., LeetCode solutions).
+This project investigates whether AI-generated and human-written code can be told apart from the code itself. Consequently, the dataset (20K raw Python samples: 10K AI + 10K Human; 18,888 after cleaning and deduplication) was aggressively cleaned to ensure standard formatting and the removal of comments and docstrings. A confidence threshold of 0.7 was established to flag samples as AI-generated only when strong evidence exists. Aegis is not a definitive judge; predictions can be imperfect, particularly in tasks where semantic convergence between humans and AI is observed (e.g., LeetCode solutions).
 
 ## Installation
 
@@ -42,6 +42,7 @@ pip uninstall aegis-detect
 - On first run, the model adapter is downloaded from the Hugging Face repo [anthonyq7/aegis](https://huggingface.co/anthonyq7/aegis) and cached under `~/.aegis/models`.
 - Internet access is required on the first run; subsequent runs use local cache. 
 - The CLI prints the predicted label and probabilities for human and AI.
+- If you are upgrading from 1.0.0 or earlier, run `aegis-cleanup` once so the current model is downloaded; otherwise the previously cached model keeps being used.
 
 ## Contact
 **Email**: a.j.qin@wustl.edu
